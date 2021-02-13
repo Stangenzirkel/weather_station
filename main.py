@@ -10,6 +10,10 @@ import sys
 from measure_temperature import *
 
 
+MEASURE_FREQUENCIES = 1
+RECORDING_FREQUENCIES = 10
+
+
 class MyWidget(QWidget):
     def __init__(self):
         super().__init__()
@@ -23,10 +27,9 @@ class MyWidget(QWidget):
         self.make_measure()
 
         self.timer = QTimer(self)
-        self.timer.setInterval(1000)
+        self.timer.setInterval(MEASURE_FREQUENCIES * 1000)
         self.timer.timeout.connect(self.make_measure)
         self.timer.start()
-
 
     def quit(self):
         self.destroy()
@@ -34,6 +37,10 @@ class MyWidget(QWidget):
 
     def make_measure(self):
         self.temps.append(temp(self.temp_sensor))
+
+        if len(self.temps) >= RECORDING_FREQUENCIES // MEASURE_FREQUENCIES * 2 + 1:
+            self.clear_temps()
+
         self.update_linechart()
 
     def create_linechart(self):
@@ -73,15 +80,19 @@ class MyWidget(QWidget):
         self.axisValue.setMax(50)
         self.axisValue.setMin(-50)
 
-        if len(self.temps) < 21:
-            self.axisTime.setMax(20)
+        if len(self.temps) < RECORDING_FREQUENCIES // MEASURE_FREQUENCIES + 1:
+            self.axisTime.setMax(RECORDING_FREQUENCIES // MEASURE_FREQUENCIES)
             self.axisTime.setMin(0)
 
         else:
             self.axisTime.setMax(len(self.temps) - 1)
-            self.axisTime.setMin(len(self.temps) - 21)
+            self.axisTime.setMin(len(self.temps) - RECORDING_FREQUENCIES // MEASURE_FREQUENCIES - 1)
 
         self.chart.setTitle('Температура - ' + str(self.temps[-1]))
+
+    def clear_temps(self):
+        print(self.temps[-1])
+        self.temps = self.temps[RECORDING_FREQUENCIES // MEASURE_FREQUENCIES:]
 
 
 if __name__ == '__main__':

@@ -1,3 +1,6 @@
+import random
+
+
 try:
     from w1thermsensor import W1ThermSensor
     sensor = W1ThermSensor()
@@ -12,7 +15,7 @@ def temp(sensor):
         return temperature
 
     except Exception:
-        return 999
+        return random.randint(-50, -30)
 
 
 if __name__ == "__main__":
