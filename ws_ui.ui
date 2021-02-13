@@ -13,95 +13,35 @@
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <widget class="QPushButton" name="pushButton">
+  <widget class="QPushButton" name="quitButton">
    <property name="geometry">
     <rect>
-     <x>10</x>
+     <x>762</x>
      <y>10</y>
-     <width>113</width>
+     <width>31</width>
      <height>32</height>
     </rect>
    </property>
    <property name="text">
-    <string>PushButton</string>
+    <string>X</string>
    </property>
   </widget>
-  <widget class="QPushButton" name="pushButton_2">
+  <widget class="QGroupBox" name="groupBox">
    <property name="geometry">
     <rect>
      <x>10</x>
      <y>50</y>
-     <width>113</width>
-     <height>32</height>
+     <width>780</width>
+     <height>420</height>
     </rect>
    </property>
-   <property name="text">
-    <string>PushButton</string>
+   <property name="font">
+    <font>
+     <kerning>true</kerning>
+    </font>
    </property>
-  </widget>
-  <widget class="QPushButton" name="pushButton_3">
-   <property name="geometry">
-    <rect>
-     <x>10</x>
-     <y>90</y>
-     <width>113</width>
-     <height>32</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>PushButton</string>
-   </property>
-  </widget>
-  <widget class="QLabel" name="label">
-   <property name="geometry">
-    <rect>
-     <x>280</x>
-     <y>10</y>
-     <width>251</width>
-     <height>461</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>ПРОВЕРКА ТЕКСТА проверка текста</string>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="pushButton_4">
-   <property name="geometry">
-    <rect>
-     <x>680</x>
-     <y>440</y>
-     <width>113</width>
-     <height>32</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>PushButton</string>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="pushButton_5">
-   <property name="geometry">
-    <rect>
-     <x>680</x>
-     <y>400</y>
-     <width>113</width>
-     <height>32</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>PushButton</string>
-   </property>
-  </widget>
-  <widget class="QPushButton" name="pushButton_6">
-   <property name="geometry">
-    <rect>
-     <x>680</x>
-     <y>360</y>
-     <width>113</width>
-     <height>32</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>PushButton</string>
+   <property name="title">
+    <string/>
    </property>
   </widget>
  </widget>
