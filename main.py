@@ -14,6 +14,8 @@ class MyWidget(QWidget):
     def __init__(self):
         super().__init__()
         uic.loadUi('ws_ui.ui', self)
+        self.temp_sensor = sensor
+
         self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
         self.quitButton.clicked.connect(self.quit)
         self.temps = []
@@ -25,7 +27,6 @@ class MyWidget(QWidget):
         self.timer.timeout.connect(self.make_measure)
         self.timer.start()
 
-        self.temp_sensor = sensor
 
     def quit(self):
         self.destroy()
@@ -72,7 +73,7 @@ class MyWidget(QWidget):
         self.axisValue.setMax(50)
         self.axisValue.setMin(-50)
 
-        if len(self.temps) < 20:
+        if len(self.temps) < 21:
             self.axisTime.setMax(20)
             self.axisTime.setMin(0)
 
@@ -80,7 +81,7 @@ class MyWidget(QWidget):
             self.axisTime.setMax(len(self.temps) - 1)
             self.axisTime.setMin(len(self.temps) - 21)
 
-        self.chart.setTitle('Температура')
+        self.chart.setTitle('Температура - ' + str(self.temps[-1]))
 
 
 if __name__ == '__main__':

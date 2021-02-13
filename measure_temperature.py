@@ -1,13 +1,19 @@
-import random
-from w1thermsensor import W1ThermSensor
+try:
+    from w1thermsensor import W1ThermSensor
+    sensor = W1ThermSensor()
 
-sensor = W1ThermSensor()
+except Exception:
+    sensor = None
 
 
 def temp(sensor):
-    temperature = sensor.get_temperature()
-    return temperature
+    try:
+        temperature = sensor.get_temperature()
+        return temperature
+
+    except Exception:
+        return 999
 
 
 if __name__ == "__main__":
-    print(temp())
+    print(temp(sensor))
