@@ -16,8 +16,8 @@ from measure_temperature import *
 import warnings
 warnings.filterwarnings("ignore")
 
-MEASURE_FREQUENCIES = 1
-RECORDING_FREQUENCIES = 10
+MEASURE_FREQUENCIES = 5
+RECORDING_FREQUENCIES = 300
 
 
 class MyWidget(QWidget):
