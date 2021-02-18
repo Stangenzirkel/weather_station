@@ -17,7 +17,7 @@ import warnings
 warnings.filterwarnings("ignore")
 
 MEASURE_FREQUENCIES = 1
-RECORDING_FREQUENCIES = 10
+RECORDING_FREQUENCIES = 600
 
 
 class MyWidget(QWidget):
