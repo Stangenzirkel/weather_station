@@ -16,8 +16,8 @@ from measure_temperature import *
 import warnings
 warnings.filterwarnings("ignore")
 
-MEASURE_FREQUENCIES = 5
-RECORDING_FREQUENCIES = 300
+MEASURE_FREQUENCIES = 1
+RECORDING_FREQUENCIES = 10
 
 
 class MyWidget(QWidget):
@@ -75,17 +75,26 @@ class MyWidget(QWidget):
         self.update_linechart()
 
     def create_linechart(self):
-        self.series = QLineSeries()
         self.chart = QChart()
-        self.chart.addSeries(self.series)
-        # self.chart.setAnimationOptions(QChart.SeriesAnimations)
+        self.chart.legend().hide()
+
+        self.red_pen = QPen(QColor(255, 0, 0))
+        self.red_pen.setWidth(2)
+        self.blue_pen = QPen(QColor(0, 0, 255))
+        self.blue_pen.setWidth(2)
+
+        self.series_main = QLineSeries()
+
+        self.series_max = QLineSeries()
+        self.series_max.setPen(self.red_pen)
+
+        self.series_min = QLineSeries()
+        self.series_min.setPen(self.blue_pen)
 
         self.axisValue = QValueAxis()
         self.axisCurrentTime = QValueAxis()
         self.axisTime = QDateTimeAxis()
         self.axisTime.setFormat("dd MMM hh:mm")
-
-        self.chart.legend().hide()
 
         self.chartview = QChartView(self.chart, self.groupBox)
         self.chartview.resize(780, 420)
@@ -102,23 +111,32 @@ class MyWidget(QWidget):
         if self.axisValue in self.chart.axes():
             self.chart.removeAxis(self.axisValue)
 
-        self.chart.removeSeries(self.series)
+        if self.series_main in self.chart.series():
+            self.chart.removeSeries(self.series_main)
 
-        self.series.clear()
+        if self.series_max in self.chart.series():
+            self.chart.removeSeries(self.series_max)
+
+        if self.series_min in self.chart.series():
+            self.chart.removeSeries(self.series_min)
+
+        self.series_main.clear()
+        self.series_max.clear()
+        self.series_min.clear()
 
         self.axisValue.setMax(50)
         self.axisValue.setMin(-50)
 
         if self.linechart_mode == 1:
             for i, res in enumerate(self.temps):
-                self.series.append(i, res)
+                self.series_main.append(i, res)
 
-            self.chart.addSeries(self.series)
+            self.chart.addSeries(self.series_main)
             self.chart.addAxis(self.axisCurrentTime, Qt.AlignBottom)
-            self.series.attachAxis(self.axisCurrentTime)
+            self.series_main.attachAxis(self.axisCurrentTime)
 
             self.chart.addAxis(self.axisValue, Qt.AlignLeft)
-            self.series.attachAxis(self.axisValue)
+            self.series_main.attachAxis(self.axisValue)
             # self.axisValue.applyNiceNumbers()
 
             if len(self.temps) < RECORDING_FREQUENCIES // MEASURE_FREQUENCIES + 1:
@@ -140,17 +158,74 @@ class MyWidget(QWidget):
             result = list(cur.execute(req, (int(dt.datetime.now().timestamp()), )))
 
             for measure in result:
-                self.series.append(measure[1] * 1000, measure[0])
+                self.series_main.append(measure[1] * 1000, measure[0])
 
             self.axisTime.setMin(QDateTime.fromMSecsSinceEpoch(int(dt.datetime.now().timestamp()) * 1000 - 86390000))
             self.axisTime.setMax(QDateTime.fromMSecsSinceEpoch(int(dt.datetime.now().timestamp()) * 1000))
 
-            self.chart.addSeries(self.series)
+            self.chart.addSeries(self.series_main)
+
             self.chart.addAxis(self.axisTime, Qt.AlignBottom)
-            self.series.attachAxis(self.axisTime)
+            self.series_main.attachAxis(self.axisTime)
 
             self.chart.addAxis(self.axisValue, Qt.AlignLeft)
-            self.series.attachAxis(self.axisValue)
+            self.series_main.attachAxis(self.axisValue)
+
+        elif self.linechart_mode == 3:
+            req = """
+                  SELECT max_t, min_t, time_from_epoch
+                  FROM long_term_data
+                  WHERE (time_from_epoch - ?) < 2592000
+                  """
+
+            cur = self.con.cursor()
+            result = list(cur.execute(req, (int(dt.datetime.now().timestamp()), )))
+
+            for measure in result:
+                self.series_max.append(measure[2] * 1000, measure[0])
+                self.series_min.append(measure[2] * 1000, measure[1])
+
+            self.axisTime.setMin(QDateTime.fromMSecsSinceEpoch(int(dt.datetime.now().timestamp()) * 1000 - 2592000000))
+            self.axisTime.setMax(QDateTime.fromMSecsSinceEpoch(int(dt.datetime.now().timestamp()) * 1000))
+
+            self.chart.addSeries(self.series_max)
+            self.chart.addSeries(self.series_min)
+
+            self.chart.addAxis(self.axisTime, Qt.AlignBottom)
+            self.series_max.attachAxis(self.axisTime)
+            self.series_min.attachAxis(self.axisTime)
+
+            self.chart.addAxis(self.axisValue, Qt.AlignLeft)
+            self.series_max.attachAxis(self.axisValue)
+            self.series_min.attachAxis(self.axisValue)
+
+        elif self.linechart_mode == 4:
+            req = """
+                  SELECT max_t, min_t, time_from_epoch
+                  FROM long_term_data
+                  WHERE (time_from_epoch - ?) < 31536000
+                  """
+
+            cur = self.con.cursor()
+            result = list(cur.execute(req, (int(dt.datetime.now().timestamp()), )))
+
+            for measure in result:
+                self.series_max.append(measure[2] * 1000, measure[0])
+                self.series_min.append(measure[2] * 1000, measure[1])
+
+            self.axisTime.setMin(QDateTime.fromMSecsSinceEpoch(int(dt.datetime.now().timestamp()) * 1000 - 31536000000))
+            self.axisTime.setMax(QDateTime.fromMSecsSinceEpoch(int(dt.datetime.now().timestamp()) * 1000))
+
+            self.chart.addSeries(self.series_max)
+            self.chart.addSeries(self.series_min)
+
+            self.chart.addAxis(self.axisTime, Qt.AlignBottom)
+            self.series_max.attachAxis(self.axisTime)
+            self.series_min.attachAxis(self.axisTime)
+
+            self.chart.addAxis(self.axisValue, Qt.AlignLeft)
+            self.series_max.attachAxis(self.axisValue)
+            self.series_min.attachAxis(self.axisValue)
 
         self.chart.setTitle('Температура - ' + str(self.temps[-1]))
 
