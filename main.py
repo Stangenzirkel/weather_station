@@ -11,13 +11,12 @@ import sys
 import datetime as dt
 import sqlite3
 
-from measure_temperature import *
+from measure import *
 
 import warnings
 warnings.filterwarnings("ignore")
 
-MEASURE_FREQUENCIES = 1
-RECORDING_FREQUENCIES = 600
+MEASURE_FREQUENCIES = 60
 
 
 class MyWidget(QWidget):
@@ -25,79 +24,61 @@ class MyWidget(QWidget):
         super().__init__()
         uic.loadUi('ws_ui.ui', self)
         self.con = sqlite3.connect("ws_database.db")
-        self.temp_sensor = sensor
-        self.linechart_mode = 1
-
         self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
-        self.quitButton.clicked.connect(self.quit)
-        self.modeButton_1.clicked.connect(self.switch_linechart_mode)
-        self.modeButton_2.clicked.connect(self.switch_linechart_mode)
-        self.modeButton_3.clicked.connect(self.switch_linechart_mode)
-        self.modeButton_4.clicked.connect(self.switch_linechart_mode)
 
-        self.temps = []
         self.create_linechart()
+        self.tmp, self.hmd, self.prs = 0, 0, 0
         self.make_measure()
 
-        self.timer = QTimer(self)
-        self.timer.setInterval(MEASURE_FREQUENCIES * 1000)
-        self.timer.timeout.connect(self.make_measure)
-        self.timer.start()
+        self.measure_timer = QTimer(self)
+        self.measure_timer.setInterval(MEASURE_FREQUENCIES * 1000)
+        self.measure_timer.timeout.connect(self.make_measure)
+        self.measure_timer.start()
+
+        self.update_timer = QTimer(self)
+        self.update_timer.setInterval(1000)
+        self.update_timer.timeout.connect(self.update_labels)
+        self.update_timer.start()
+
+        self.update_labels()
 
     def quit(self):
         self.destroy()
         quit()
 
-    def switch_linechart_mode(self):
-        modes = {"За 10 минут": 1, "За 24 часа": 2, "За месяц": 3, "За год": 4}
-        self.linechart_mode = modes[self.sender().text()]
-        self.update_linechart()
-
     def make_measure(self):
-        self.temps.append(temp(self.temp_sensor))
+        self.tmp, self.hmd, self.prs = sensor_measure()
+        time = int(dt.datetime.now().timestamp())
 
-        if len(self.temps) >= RECORDING_FREQUENCIES // MEASURE_FREQUENCIES * 2 + 1:
-            self.temps = self.temps[RECORDING_FREQUENCIES // MEASURE_FREQUENCIES:]
+        req = """
+              INSERT INTO short_term_data(tmp, hmd, prs, time_from_epoch)
+              VALUES(?,?,?,?)
+              """
 
-        if len(self.temps) == RECORDING_FREQUENCIES // MEASURE_FREQUENCIES + 1:
-            max_t = float(max(self.temps))
-            min_t = float(min(self.temps))
-            time = int(dt.datetime.now().timestamp())
-
-            req = """
-                  INSERT INTO short_term_data(max_t, min_t, time_from_epoch)
-                  VALUES(?,?,?)
-                  """
-
-            self.con.execute(req, (max_t, min_t, time))
-            self.con.commit()
+        self.con.execute(req, (self.tmp, self.hmd, self.prs, time))
+        self.con.commit()
 
         self.update_linechart()
+
+    def update_labels(self):
+        self.time_label.setText(dt.datetime.now().strftime('%H:%M'))
+        self.tmp_label.setText('{} C'.format(self.tmp))
+        self.hmd_label.setText('{} %'.format(self.hmd))
+        self.prs_label.setText('{} КПа'.format(self.prs))
 
     def create_linechart(self):
         self.chart = QChart()
         self.chart.legend().hide()
 
-        self.red_pen = QPen(QColor(255, 0, 0))
-        self.red_pen.setWidth(2)
-        self.blue_pen = QPen(QColor(0, 0, 255))
-        self.blue_pen.setWidth(2)
-
-        self.series_main = QLineSeries()
-
-        self.series_max = QLineSeries()
-        self.series_max.setPen(self.red_pen)
-
-        self.series_min = QLineSeries()
-        self.series_min.setPen(self.blue_pen)
+        self.series = QLineSeries()
 
         self.axisValue = QValueAxis()
         self.axisCurrentTime = QValueAxis()
         self.axisTime = QDateTimeAxis()
-        self.axisTime.setFormat("dd MMM hh:mm")
+        self.axisTime.setFormat("hh:mm")
 
         self.chartview = QChartView(self.chart, self.groupBox)
-        self.chartview.resize(780, 420)
+        self.chartview.resize(540, 460)
         self.chartview.move(0, 0)
         self.chartview.setRenderHint(QPainter.Antialiasing)
 
@@ -111,123 +92,36 @@ class MyWidget(QWidget):
         if self.axisValue in self.chart.axes():
             self.chart.removeAxis(self.axisValue)
 
-        if self.series_main in self.chart.series():
-            self.chart.removeSeries(self.series_main)
+        if self.series in self.chart.series():
+            self.chart.removeSeries(self.series)
 
-        if self.series_max in self.chart.series():
-            self.chart.removeSeries(self.series_max)
-
-        if self.series_min in self.chart.series():
-            self.chart.removeSeries(self.series_min)
-
-        self.series_main.clear()
-        self.series_max.clear()
-        self.series_min.clear()
+        self.series.clear()
 
         self.axisValue.setMax(50)
         self.axisValue.setMin(-50)
 
-        if self.linechart_mode == 1:
-            for i, res in enumerate(self.temps):
-                self.series_main.append(i, res)
+        req = """
+              SELECT tmp, time_from_epoch
+              FROM short_term_data
+              WHERE (time_from_epoch - ?) < 86400
+              """
 
-            self.chart.addSeries(self.series_main)
-            self.chart.addAxis(self.axisCurrentTime, Qt.AlignBottom)
-            self.series_main.attachAxis(self.axisCurrentTime)
+        cur = self.con.cursor()
+        result = list(cur.execute(req, (int(dt.datetime.now().timestamp()), )))
 
-            self.chart.addAxis(self.axisValue, Qt.AlignLeft)
-            self.series_main.attachAxis(self.axisValue)
-            # self.axisValue.applyNiceNumbers()
+        for measure in result:
+            self.series.append(measure[1] * 1000, measure[0])
 
-            if len(self.temps) < RECORDING_FREQUENCIES // MEASURE_FREQUENCIES + 1:
-                self.axisCurrentTime.setMax(RECORDING_FREQUENCIES // MEASURE_FREQUENCIES)
-                self.axisCurrentTime.setMin(0)
+        self.axisTime.setMin(QDateTime.fromMSecsSinceEpoch(int(dt.datetime.now().timestamp()) * 1000 - 86390000))
+        self.axisTime.setMax(QDateTime.fromMSecsSinceEpoch(int(dt.datetime.now().timestamp()) * 1000))
 
-            else:
-                self.axisCurrentTime.setMax(len(self.temps) - 1)
-                self.axisCurrentTime.setMin(len(self.temps) - RECORDING_FREQUENCIES // MEASURE_FREQUENCIES - 1)
+        self.chart.addSeries(self.series)
+        self.chart.addAxis(self.axisTime, Qt.AlignBottom)
+        self.series.attachAxis(self.axisTime)
+        self.chart.addAxis(self.axisValue, Qt.AlignLeft)
+        self.series.attachAxis(self.axisValue)
 
-        elif self.linechart_mode == 2:
-            req = """
-                  SELECT max_t, time_from_epoch
-                  FROM short_term_data
-                  WHERE (time_from_epoch - ?) < 86400
-                  """
-
-            cur = self.con.cursor()
-            result = list(cur.execute(req, (int(dt.datetime.now().timestamp()), )))
-
-            for measure in result:
-                self.series_main.append(measure[1] * 1000, measure[0])
-
-            self.axisTime.setMin(QDateTime.fromMSecsSinceEpoch(int(dt.datetime.now().timestamp()) * 1000 - 86390000))
-            self.axisTime.setMax(QDateTime.fromMSecsSinceEpoch(int(dt.datetime.now().timestamp()) * 1000))
-
-            self.chart.addSeries(self.series_main)
-
-            self.chart.addAxis(self.axisTime, Qt.AlignBottom)
-            self.series_main.attachAxis(self.axisTime)
-
-            self.chart.addAxis(self.axisValue, Qt.AlignLeft)
-            self.series_main.attachAxis(self.axisValue)
-
-        elif self.linechart_mode == 3:
-            req = """
-                  SELECT max_t, min_t, time_from_epoch
-                  FROM long_term_data
-                  WHERE (time_from_epoch - ?) < 2592000
-                  """
-
-            cur = self.con.cursor()
-            result = list(cur.execute(req, (int(dt.datetime.now().timestamp()), )))
-
-            for measure in result:
-                self.series_max.append(measure[2] * 1000, measure[0])
-                self.series_min.append(measure[2] * 1000, measure[1])
-
-            self.axisTime.setMin(QDateTime.fromMSecsSinceEpoch(int(dt.datetime.now().timestamp()) * 1000 - 2592000000))
-            self.axisTime.setMax(QDateTime.fromMSecsSinceEpoch(int(dt.datetime.now().timestamp()) * 1000))
-
-            self.chart.addSeries(self.series_max)
-            self.chart.addSeries(self.series_min)
-
-            self.chart.addAxis(self.axisTime, Qt.AlignBottom)
-            self.series_max.attachAxis(self.axisTime)
-            self.series_min.attachAxis(self.axisTime)
-
-            self.chart.addAxis(self.axisValue, Qt.AlignLeft)
-            self.series_max.attachAxis(self.axisValue)
-            self.series_min.attachAxis(self.axisValue)
-
-        elif self.linechart_mode == 4:
-            req = """
-                  SELECT max_t, min_t, time_from_epoch
-                  FROM long_term_data
-                  WHERE (time_from_epoch - ?) < 31536000
-                  """
-
-            cur = self.con.cursor()
-            result = list(cur.execute(req, (int(dt.datetime.now().timestamp()), )))
-
-            for measure in result:
-                self.series_max.append(measure[2] * 1000, measure[0])
-                self.series_min.append(measure[2] * 1000, measure[1])
-
-            self.axisTime.setMin(QDateTime.fromMSecsSinceEpoch(int(dt.datetime.now().timestamp()) * 1000 - 31536000000))
-            self.axisTime.setMax(QDateTime.fromMSecsSinceEpoch(int(dt.datetime.now().timestamp()) * 1000))
-
-            self.chart.addSeries(self.series_max)
-            self.chart.addSeries(self.series_min)
-
-            self.chart.addAxis(self.axisTime, Qt.AlignBottom)
-            self.series_max.attachAxis(self.axisTime)
-            self.series_min.attachAxis(self.axisTime)
-
-            self.chart.addAxis(self.axisValue, Qt.AlignLeft)
-            self.series_max.attachAxis(self.axisValue)
-            self.series_min.attachAxis(self.axisValue)
-
-        self.chart.setTitle('Температура - ' + str(self.temps[-1]))
+        self.chart.setTitle('Температура')
 
 
 if __name__ == '__main__':
