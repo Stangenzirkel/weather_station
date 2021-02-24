@@ -67,12 +67,12 @@
     <rect>
      <x>560</x>
      <y>220</y>
-     <width>121</width>
+     <width>230</width>
      <height>60</height>
     </rect>
    </property>
    <property name="text">
-    <string>1017.7</string>
+    <string/>
    </property>
   </widget>
   <widget class="QLabel" name="time_label">
@@ -91,24 +91,6 @@
    </property>
    <property name="text">
     <string/>
-   </property>
-  </widget>
-  <widget class="QLabel" name="hpa_label">
-   <property name="geometry">
-    <rect>
-     <x>690</x>
-     <y>220</y>
-     <width>70</width>
-     <height>31</height>
-    </rect>
-   </property>
-   <property name="font">
-    <font>
-     <pointsize>20</pointsize>
-    </font>
-   </property>
-   <property name="text">
-    <string>hPa</string>
    </property>
   </widget>
  </widget>

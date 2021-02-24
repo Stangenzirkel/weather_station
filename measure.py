@@ -6,7 +6,10 @@ try:
     import time
     from BMP180 import BMP180
 
-    temp_sensor = 14
+    from w1thermsensor import W1ThermSensor
+    sensor = W1ThermSensor()
+
+    hmd_sensor = 14
     bmp = BMP180()
     GPIO.setwarnings(False)
     GPIO.setmode(GPIO.BCM)
@@ -23,10 +26,9 @@ def sensor_measure():
     prs = ERROR_CODE
 
     try:
-        result = dht11.DHT11(pin=temp_sensor).read()
-
+        tmp = round(sensor.get_temperature(), 1)
+        result = dht11.DHT11(pin=hmd_sensor).read()
         if result.is_valid():
-            tmp = result.temperature
             hmd = result.humidity
 
         prs = round(bmp.read_pressure() / 100, 1)

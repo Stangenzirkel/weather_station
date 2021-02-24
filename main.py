@@ -80,10 +80,12 @@ class MyWidget(QWidget):
         self.update_linechart()
 
     def update_labels(self):
+        deg = u'\N{DEGREE SIGN}'
+        hpa = 'ʰᴾᵃ'
         self.time_label.setText(dt.datetime.now().strftime('%H:%M'))
-        self.tmp_label.setText('{} {}C'.format(self.tmp, u'\N{DEGREE SIGN}'))
+        self.tmp_label.setText('{} {}C'.format(self.tmp, deg))
         self.hmd_label.setText('{} %'.format(self.hmd))
-        self.prs_label.setText('{}'.format(self.prs))
+        self.prs_label.setText('{} {}'.format(self.prs, hpa))
 
     def create_linechart(self):
         self.chart = QChart()
