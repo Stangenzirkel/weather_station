@@ -29,7 +29,7 @@ def sensor_measure():
             tmp = result.temperature
             hmd = result.humidity
 
-        prs = bmp.read_pressure() / 100
+        prs = round(bmp.read_pressure() / 100, 1)
 
     except Exception:
         print("exception when measure")

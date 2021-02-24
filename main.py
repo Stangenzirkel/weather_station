@@ -16,7 +16,7 @@ from measure import *
 import warnings
 warnings.filterwarnings("ignore")
 
-MEASURE_FREQUENCIES = 60
+MEASURE_FREQUENCIES = 5
 
 
 class MyWidget(QWidget):
@@ -47,7 +47,26 @@ class MyWidget(QWidget):
         quit()
 
     def make_measure(self):
-        self.tmp, self.hmd, self.prs = sensor_measure()
+        sns = sensor_measure()
+
+        if sns[0] != ERROR_CODE:
+            self.tmp = sns[0]
+
+        else:
+            print('tmp error')
+
+        if sns[1] != ERROR_CODE:
+            self.hmd = sns[1]
+
+        else:
+            print('hmd error')
+
+        if sns[2] != ERROR_CODE:
+            self.prs = sns[2]
+
+        else:
+            print('prs error')
+
         time = int(dt.datetime.now().timestamp())
 
         req = """
@@ -62,9 +81,9 @@ class MyWidget(QWidget):
 
     def update_labels(self):
         self.time_label.setText(dt.datetime.now().strftime('%H:%M'))
-        self.tmp_label.setText('{} C'.format(self.tmp))
+        self.tmp_label.setText('{} {}C'.format(self.tmp, u'\N{DEGREE SIGN}'))
         self.hmd_label.setText('{} %'.format(self.hmd))
-        self.prs_label.setText('{} КПа'.format(self.prs))
+        self.prs_label.setText('{}'.format(self.prs))
 
     def create_linechart(self):
         self.chart = QChart()
