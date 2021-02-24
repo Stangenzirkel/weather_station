@@ -103,11 +103,11 @@ class MyWidget(QWidget):
         req = """
               SELECT tmp, time_from_epoch
               FROM short_term_data
-              WHERE (time_from_epoch - ?) < 86400
+              WHERE (time_from_epoch - ?) < 86400 AND NOT tmp = ?
               """
 
         cur = self.con.cursor()
-        result = list(cur.execute(req, (int(dt.datetime.now().timestamp()), )))
+        result = list(cur.execute(req, (int(dt.datetime.now().timestamp()), ERROR_CODE)))
 
         for measure in result:
             self.series.append(measure[1] * 1000, measure[0])

@@ -23,19 +23,27 @@ def format_data():
         result = list(cur.execute(req, (time,)))
 
         max_tmp = max(result, key=lambda x: float(x[0]))[0]
-        min_tmp = max(result, key=lambda x: float(x[0]))[0]
-        hmd = max(result, key=lambda x: float(x[1]))[1]
-        prs = max(result, key=lambda x: float(x[2]))[2]
+        min_tmp = min(result, key=lambda x: float(x[0]))[0]
+        hmd = min(result, key=lambda x: float(x[1]))[1]
+        prs = min(result, key=lambda x: float(x[2]))[2]
 
         req = """
               INSERT INTO long_term_data(max_tmp, min_tmp, hmd, prs, time_from_epoch)
               VALUES(?,?,?,?,?)
               """
 
-        con.execute(req, (max_tmp, min_tmp, hmd, prs, time))
+        con.execute(req, (max_tmp, min_tmp, hmd, prs, time, time))
         con.commit()
 
-        clear_short_term_data()
+        req = """
+              DELETE
+              FROM short_term_data
+              WHERE (time_from_epoch - ?) > 86400
+              """
+
+        cur.execute(req, (time,))
+        con.commit()
+
         print('data formatting success')
 
     except Exception as error:

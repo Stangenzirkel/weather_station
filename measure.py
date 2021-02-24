@@ -3,19 +3,24 @@ import time
 try:
     import dht11
     import RPi.GPIO as GPIO
+    import time
+    from BMP180 import BMP180
 
-    temp_sensor = 4
+    temp_sensor = 14
+    bmp = BMP180()
     GPIO.setwarnings(False)
     GPIO.setmode(GPIO.BCM)
 
 except Exception:
     print("exception when loading modules")
 
+ERROR_CODE = 999
+
 
 def sensor_measure():
-    tmp = 0
-    hmd = 0
-    prs = 0
+    tmp = ERROR_CODE
+    hmd = ERROR_CODE
+    prs = ERROR_CODE
 
     try:
         result = dht11.DHT11(pin=temp_sensor).read()
@@ -24,8 +29,10 @@ def sensor_measure():
             tmp = result.temperature
             hmd = result.humidity
 
+        prs = bmp.read_pressure() / 100
+
     except Exception:
-        print("exception when measure tmp and hmd")
+        print("exception when measure")
 
     finally:
         return tmp, hmd, prs
